@@ -1,5 +1,13 @@
+use std::collections::HashMap;
+
+use lazy_static::lazy_static;
 use serde::Deserialize;
 use thiserror::Error;
+use tokio::sync::RwLock;
+
+lazy_static! {
+    static ref USER_MAP:RwLock<HashMap<String,String>> = RwLock::new(HashMap::new());
+}
 
 #[derive(Deserialize, Debug)]
 pub struct GhUserResponse {
@@ -21,9 +29,9 @@ impl std::convert::From<reqwest::Error> for Error {
 }
 
 
-async fn get_user_for_token(token: String) -> Result<String, Error> {
+async fn get_user_for_token(token: &String) -> Result<String, Error> {
     let mut auth_header_value: String = "Bearer ".to_string();
-    auth_header_value.push_str(&token);
+    auth_header_value.push_str(token);
 
     let client = reqwest::Client::new();
     let resp = client.get("https://api.github.com/user")
@@ -44,9 +52,33 @@ async fn get_user_for_token(token: String) -> Result<String, Error> {
 }
 
 pub async fn check_token(user: String, token: String) -> bool {
-    let gh_response = get_user_for_token(token).await;
-    match gh_response {
-        Ok(token_username) => token_username == user,
-        Err(_) => false
+    let user_details = {
+        USER_MAP.read().await.get(&user).map(|x| x.clone())
+    };
+    match user_details {
+        Some(pass) => {
+            if pass == token {
+                println!("User: {} authenticated from cache", user);
+                true
+            } else {
+                false
+            }
+        }
+        None => {
+            let gh_response = get_user_for_token(&token).await;
+            match gh_response {
+                Ok(token_username) => {
+                    if token_username == user {
+                        println!("User: {} authenticated successfully", token_username);
+                        let mut writable_user_map = USER_MAP.write().await;
+                        writable_user_map.insert(token_username, token.clone());
+                        true
+                    } else {
+                        false
+                    }
+                }
+                Err(_) => false
+            }
+        }
     }
 }
