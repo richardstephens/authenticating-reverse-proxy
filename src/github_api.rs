@@ -58,20 +58,23 @@ async fn get_user_for_token(token: &String) -> Result<String, Error> {
 }
 
 async fn get_org_members_page(org: &String, token: &String, page: u32) -> Vec<GhOrgMember> {
-    let mut auth_header_value: String = "Bearer ".to_string();
-    auth_header_value.push_str(token);
     let client = reqwest::Client::new();
     let mut req_url = "https://api.github.com/orgs/".to_string();
     req_url.push_str(&org);
     req_url.push_str("/members?per_page=100&page=");
     req_url.push_str(&page.to_string());
     println!("URL: {}", req_url);
-    let resp = client.get(&req_url)
+    let mut req = client.get(&req_url)
         .header("User-Agent", "Authenticating Reverse Proxy (https://github.com/richardstephens/authenticating-reverse-proxy)")
         .header("Accept", "application/vnd.github+json")
-        .header("X-GitHub-Api-Version", "2022-11-28")
-        .header("Authorization", &auth_header_value)
-        .send().await;
+        .header("X-GitHub-Api-Version", "2022-11-28");
+    if token != "" {
+        let mut auth_header_value: String = "Bearer ".to_string();
+        auth_header_value.push_str(token);
+        req = req.header("Authorization", &auth_header_value);
+    }
+
+    let resp = req.send().await;
 
     let resp_content = resp.unwrap().json::<Vec<GhOrgMember>>().await.unwrap();
     return resp_content;

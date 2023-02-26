@@ -16,12 +16,16 @@ struct Args {
     #[arg(env, long, default_value = "127.0.0.1:8000")]
     bind: String,
 
+    /// Auth method to to use (currently only supported is GH_BASIC)
+    #[arg(env, long)]
+    auth_method: String,
+
     /// Target URL of reverse proxy
     #[arg(env, long)]
     target: String,
 
     /// Token to use to read organisation members
-    #[arg(env, long)]
+    #[arg(env, long, default_value = "")]
     gh_org_token: String,
 
     /// Organisation to check membership of
@@ -32,7 +36,13 @@ struct Args {
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    get_org_members(args.gh_org, args.gh_org_token).await;
 
-    start_reverse_proxy(args.target, args.bind).await
+    if args.auth_method == "GH_BASIC" {
+        get_org_members(args.gh_org, args.gh_org_token).await;
+
+        start_reverse_proxy(args.target, args.bind).await
+    } else {
+        eprintln!("Auth method must be set to GH_BASIC");
+        std::process::exit(1);
+    }
 }
