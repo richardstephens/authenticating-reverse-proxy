@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use argon2::{Config, hash_encoded, verify_encoded};
 use lazy_static::lazy_static;
 use serde::Deserialize;
 use thiserror::Error;
@@ -108,7 +109,7 @@ pub async fn check_token(user: String, token: String) -> bool {
     };
     match user_details {
         Some(pass) => {
-            if pass == token {
+            if verify_encoded(&pass, &token.into_bytes()).unwrap_or(false) {
                 println!("User: {} authenticated from cache", user);
                 true
             } else {
@@ -121,8 +122,11 @@ pub async fn check_token(user: String, token: String) -> bool {
                 Ok(token_username) => {
                     if token_username == user {
                         println!("User: {} authenticated successfully", token_username);
+                        let mut salt = [0u8; 8];
+                        getrandom::getrandom(&mut salt).unwrap();
+                        let hash = hash_encoded(&token.into_bytes(), &salt, &Config::default()).unwrap();
                         let mut writable_user_map = USER_MAP.write().await;
-                        writable_user_map.insert(token_username, token.clone());
+                        writable_user_map.insert(token_username, hash);
                         true
                     } else {
                         println!("Github token did not match user: {}", token_username);
