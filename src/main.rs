@@ -1,18 +1,22 @@
-use std::{convert::Infallible, net::SocketAddr};
-use std::net::IpAddr;
-use std::str::FromStr;
-
-use hyper::{Body, Request, Response, Server, StatusCode};
-use hyper::http::{HeaderName, HeaderValue};
-use hyper::server::conn::AddrStream;
-use hyper::service::{make_service_fn, service_fn};
-use hyper_reverse_proxy;
+use clap::Parser;
 
 use reverse_proxy::start_reverse_proxy;
 
 mod reverse_proxy;
+mod github_api;
+
+
+/// Simple program to greet a person
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Target URL of reverse proxy
+    #[arg(short, long)]
+    target: String,
+}
 
 #[tokio::main]
 async fn main() {
-    start_reverse_proxy().await
+    let args = Args::parse();
+    start_reverse_proxy(args.target).await
 }
