@@ -76,8 +76,7 @@ async fn handle(forward_uri: String, client_ip: IpAddr, req: Request<Body>) -> R
     }
 }
 
-pub async fn start_reverse_proxy(forward_uri: String) {
-    let bind_addr = "127.0.0.1:8000";
+pub async fn start_reverse_proxy(forward_uri: String, bind_addr: String) {
     let addr: SocketAddr = bind_addr.parse().expect("Could not parse ip:port.");
 
     let make_svc = make_service_fn(|conn: &AddrStream| {

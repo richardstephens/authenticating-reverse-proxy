@@ -12,16 +12,20 @@ mod github_api;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// Address to bind to
+    #[arg(env, long, default_value = "127.0.0.1:8000")]
+    bind: String,
+
     /// Target URL of reverse proxy
-    #[arg(short, long)]
+    #[arg(env, long)]
     target: String,
 
     /// Token to use to read organisation members
-    #[arg(long)]
+    #[arg(env, long)]
     gh_org_token: String,
 
     /// Organisation to check membership of
-    #[arg(long)]
+    #[arg(env, long)]
     gh_org: String,
 }
 
@@ -30,5 +34,5 @@ async fn main() {
     let args = Args::parse();
     get_org_members(args.gh_org, args.gh_org_token).await;
 
-    start_reverse_proxy(args.target).await
+    start_reverse_proxy(args.target, args.bind).await
 }

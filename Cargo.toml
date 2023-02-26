@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 base64 = "0.21.0"
-clap = { version = "4.1.6", features = ["derive"] }
+clap = { version = "4.1.6", features = ["derive", "env"] }
 http-auth-basic = "0.3.3"
 hyper = { version = "0.14.24", features = ["full"] }
 hyper-reverse-proxy = "0.5.1"
